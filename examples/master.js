@@ -103,8 +103,8 @@ async function startMaster(localView, remoteView, formValues, onStatsReport, onR
         audio: formValues.sendAudio,
     };
 
-    // Get a stream from the webcam and display it in the local view. 
-    // If no video/audio needed, no need to request for the sources. 
+    // Get a stream from the webcam and display it in the local view.
+    // If no video/audio needed, no need to request for the sources.
     // Otherwise, the browser will throw an error saying that either video or audio has to be enabled.
     if (formValues.sendVideo || formValues.sendAudio) {
         try {

@@ -84,7 +84,8 @@ function onStop() {
         stopViewer();
         $('#viewer').addClass('d-none');
     }
-    
+
+    $('#ptz').addClass('d-none');
     $('#form').removeClass('d-none');
     ROLE = null;
 }
@@ -107,6 +108,7 @@ $('#master-button').click(async () => {
     ROLE = 'master';
     $('#form').addClass('d-none');
     $('#master').removeClass('d-none');
+    $('#ptz').removeClass('d-none');
 
     const localView = $('#master .local-view')[0];
     const remoteView = $('#master .remote-view')[0];
@@ -129,6 +131,7 @@ $('#viewer-button').click(async () => {
     ROLE = 'viewer';
     $('#form').addClass('d-none');
     $('#viewer').removeClass('d-none');
+    $('#ptz').removeClass('d-none');
 
     const localView = $('#viewer .local-view')[0];
     const remoteView = $('#viewer .remote-view')[0];
@@ -140,10 +143,42 @@ $('#viewer-button').click(async () => {
     localMessage.value = '';
     toggleDataChannelElements();
 
+    liveStr = processLiveMsg($('#accessKeyId').val(),$('#secretAccessKey').val(),$('#sessionToken').val());
+    client.publish("<DEVICE_PLAY_TOPIC>",liveStr);
+
     startViewer(localView, remoteView, formValues, onStatsReport, event => {
         remoteMessage.append(`${event.data}\n`);
     });
 });
+
+$("img").click(function(){
+    val = $(this).attr("id");
+    var payload = "";
+    if( val == 'camera_up'){
+        payload =  {"ptz":{"x":0,"y":-20}};
+    }else if (val =='camera_down'){
+        payload =  {"ptz":{"x":0,"y":20}};
+    }else if(val == 'camera_left'){
+        payload =  {"ptz":{"x":-20,"y":0}};
+    }else if (val == 'camera_right'){
+        payload =  {"ptz":{"x":20,"y":0}};
+    }else{
+        //;
+    }
+    var clientId = "server";
+    var messageId = "ssss";
+    var version = 1;
+
+    var jsonStr = {
+      "payload": payload,
+      "clientId": clientId,
+      "version": "1",
+      "messageId": messageId
+    };
+
+    client.publish("<DEVICE_CONTROL_TOPIC>",jsonStr);
+});
+
 
 $('#stop-viewer-button').click(onStop);
 
@@ -162,6 +197,7 @@ $('#viewer .send-message').click(async () => {
     const viewerLocalMessage = $('#viewer .local-message')[0];
     sendViewerMessage(viewerLocalMessage.value);
 });
+
 
 // Read/Write all of the fields to/from localStorage so that fields are not lost on refresh.
 const urlParams = new URLSearchParams(window.location.search);
@@ -183,6 +219,7 @@ const fields = [
     { field: 'forceTURN', type: 'radio', name: 'natTraversal' },
     { field: 'natTraversalDisabled', type: 'radio', name: 'natTraversal' },
 ];
+
 fields.forEach(({ field, type, name }) => {
     const id = '#' + field;
 
@@ -230,6 +267,38 @@ fields.forEach(({ field, type, name }) => {
         }
     });
 });
+
+const options = {
+    method: 'GET',
+    Accept: 'application/json',
+    headers: {
+    'content-type': 'application/json',
+    'Access-Control-Allow-Origin':'*',
+    'Access-Control-Allow-Headers':'Content-Type',
+    'Access-Control-Allow-Methods':'GET, OPTIONS'
+    },
+};
+
+fetch('<GET_CREDENTIAL>',options)
+    .then( response => response.json())
+    .then( response => {
+
+        $('#accessKeyId').val(response['AccessKeyId']);
+        $('#secretAccessKey').val(response['SecretAccessKey']);
+        $('#sessionToken').val(response['SessionToken']);
+
+        console.log('AccessKeyId = ', response['AccessKeyId']);
+        console.log('secretAccessKey = ', response['SecretAccessKey']);
+        console.log('sessionToken = ', response['SessionToken']);
+
+    }).catch(function(error) {
+        console.log('Request failed', error);
+});
+
+    $('#channelName').val('<CHANNEL_NAME>');
+    $('#clientId').val('<CLIENT_ID>');
+    $('#region').val('<REGION>');
+
 
 // The page is all setup. Hide the loading spinner and show the page content.
 $('.loader').addClass('d-none');
